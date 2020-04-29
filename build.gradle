@@ -1,0 +1,41 @@
+import com.ullink.gradle.licenseFinder.LicenseFinderPlugin
+import com.ullink.gradle.licenseFinder.extension.LicenseFinderExtension
+import com.github.jrubygradle.JRubyExec
+
+buildscript {
+    repositories {
+      mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.ullink.gradle:gradle-msbuild-plugin:3.7'
+        classpath 'com.ullink.gradle:gradle-licenseFinder-plugin:0.5'
+    }
+}
+
+apply plugin:'com.ullink.msbuild'
+apply plugin: LicenseFinderPlugin
+
+msbuild {
+    solutionFile = 'dotnet-gradle-sample.sln'
+    projectFile = file('src/dotnet-gradle-sample.csproj')
+
+    projectName = project.name
+
+    destinationDir = 'build/msbuild/bin'
+}
+
+def licenseFinderExtension = project.extensions.create("licenseFinderExtension", LicenseFinderExtension, project)
+
+def createReportDir = {
+    def reportDir = new File("build/report/")
+    reportDir.mkdirs()
+}
+
+project.tasks.create('report', JRubyExec).with {
+            script(licenseFinderExtension.checkLicensesScript)
+            scriptArgs "--project-path=src"
+            dependsOn('installLicenseFinder')
+            doFirst(createReportDir)
+}
+
